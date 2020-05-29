@@ -9,10 +9,8 @@ Small Open Hack Prototype to experiment the current state of Web API about speec
 ![Logo](./logo.png)
 
 ## Vocal Commands
-* `Start` or `Next` (to change page
-* `Up`, `Down`, `Left`, `Right`
-or if you prefer
-* `North`, `South`, `East`, `West`
+* `Start` or `Next` (to change page)
+* `Up`, `Down`, `Left`, `Right` or if you prefer `North`, `South`, `East`, `West` (it's the same)
 
 ## Conclusion
 
