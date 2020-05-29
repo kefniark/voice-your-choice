@@ -4,6 +4,8 @@
 
 Small Open Hack Prototype to experiment the current state of Web API about speech recognition.
 
+[Live Demo](https://kefniark.github.io/voice-your-choice/assets/)
+
 ![Logo](./logo.png)
 
 ## Conclusion
