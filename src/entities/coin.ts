@@ -1,4 +1,4 @@
-import { IEntity, ILevelData, canvasWidth, canvasHeight } from "../core";
+import { IEntity, ILevelData, canvasWidth, canvasHeight } from "../core"
 
 export class Coin implements IEntity {
     public id = "coin-*"

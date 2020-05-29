@@ -1,5 +1,7 @@
-import { IEntity, ILevelData, canvasWidth, canvasHeight } from "../core";
-import { Block, Coin, Goal } from "./index";
+import { IEntity, ILevelData, canvasWidth, canvasHeight } from "../core"
+import { Block } from "./block"
+import { Coin } from "./coin"
+import { Goal } from "./goal"
 
 export class Character implements IEntity {
     public id = "character"

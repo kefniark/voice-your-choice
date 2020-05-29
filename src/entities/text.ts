@@ -1,4 +1,4 @@
-import { IEntity } from "../core";
+import { IEntity } from "../core"
 
 export class Text implements IEntity {
     public id = "text"

@@ -1,4 +1,4 @@
-import { IEntity, canvasWidth, canvasHeight } from "../core";
+import { IEntity, canvasWidth, canvasHeight } from "../core"
 
 export class Block implements IEntity {
     public id = "block-*"

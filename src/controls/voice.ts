@@ -1,12 +1,16 @@
 import { Command } from "../core"
 
 const speechRecognition: any = (window.SpeechRecognition || window.webkitSpeechRecognition)
-const homonyms: Map<Command, string[]> = new Map()
 
+/**
+ * helpers just used to match phoneme or similar words with our command
+ * shouldnt be needed if chrome was properly implementing grammar list
+ */
+const homonyms: Map<Command, string[]> = new Map()
 homonyms.set(Command.Start, ['stop', 'tart', 'next'])
 homonyms.set(Command.Left, ['lift', 'lyft', 'let', "let's", "late", "list", "west", "reflect", "like", "lights"])
 homonyms.set(Command.Right, ['write', 'wright', 'bright', "east", "fright"])
-homonyms.set(Command.Down, ["don't know", "don't", "doan", "done", "dumb", "dawn", "$", "south", "sauce", "twown", "on", "donna", "down", "doll"])
+homonyms.set(Command.Down, ["don't know", "don't", "doan", "done", "dumb", "dawn", "$", "south", "sauce", "twown", "on", "donna", "down", "doll", "gone"])
 homonyms.set(Command.Up, ['oak', 'hope', "north", "notes", "nose"])
 
 function matchCommands(cmd: string, msg: string) {
@@ -19,7 +23,6 @@ function matchCommands(cmd: string, msg: string) {
 
 function process(msg: string) {
     let txt = msg.toLowerCase().trim()
-
     for (const cmd of homonyms.keys()) {
         txt = matchCommands(cmd, txt)
     }
@@ -27,24 +30,17 @@ function process(msg: string) {
 }
 
 export function voiceRecognitionStart(callback: (cmd: Command[]) => void) {
+    //create speech recognition object
     const recognition: SpeechRecognition = new speechRecognition()
 
+    // setup
     recognition.continuous = false
     recognition.lang = 'en-US'
     recognition.maxAlternatives = 3
     recognition.interimResults = true
 
-    // let processed = 0
-    // recognition.onaudiostart = (evt) => console.log('onaudiostart', evt)
-    // recognition.onaudioend = (evt) => console.log('onaudioend', evt)
-    // recognition.onerror = (evt) => console.log('onerror', evt)
-    recognition.onend = () => {
-        // console.log('onend', evt)
-        recognition.start()
-    }
+    recognition.onend = () => recognition.start()
     recognition.onresult = function (evt: any) {
-        // if (evt.resultIndex <= processed) return
-
         var interim_transcript = ''
         var final_transcript = ''
         var requiredConfidence = 0.75
@@ -59,18 +55,22 @@ export function voiceRecognitionStart(callback: (cmd: Command[]) => void) {
 
         console.log(evt, `${interim_transcript} || ${final_transcript} => ${process(final_transcript)}`)
 
-        let resInter = process(interim_transcript)
-        if (resInter && resInter.length > 0) {
-            recognition.abort()
-            // processed = evt.resultIndex
-            return callback(resInter)
+        // try to process final result
+        if (final_transcript) {
+            let resFinal = process(final_transcript)
+            if (resFinal && resFinal.length > 0) {
+                recognition.abort()
+                return callback(resFinal)
+            }
         }
 
-        let resFinal = process(final_transcript)
-        if (resFinal && resFinal.length > 0) {
-            recognition.abort()
-            // processed = evt.resultIndex
-            return callback(resFinal)
+        // try to process inter result
+        if (interim_transcript) {
+            let resInter = process(interim_transcript)
+            if (resInter && resInter.length > 0) {
+                recognition.abort()
+                return callback(resInter)
+            }
         }
     }
     recognition.start()

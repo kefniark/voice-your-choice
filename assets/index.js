@@ -11,11 +11,15 @@ var Command;
 })(Command || (Command = {}));
 
 const speechRecognition = (window.SpeechRecognition || window.webkitSpeechRecognition);
+/**
+ * helpers just used to match phoneme or similar words with our command
+ * shouldnt be needed if chrome was properly implementing grammar list
+ */
 const homonyms = new Map();
 homonyms.set(Command.Start, ['stop', 'tart', 'next']);
 homonyms.set(Command.Left, ['lift', 'lyft', 'let', "let's", "late", "list", "west", "reflect", "like", "lights"]);
 homonyms.set(Command.Right, ['write', 'wright', 'bright', "east", "fright"]);
-homonyms.set(Command.Down, ["don't know", "don't", "doan", "done", "dumb", "dawn", "$", "south", "sauce", "twown", "on", "donna", "down", "doll"]);
+homonyms.set(Command.Down, ["don't know", "don't", "doan", "done", "dumb", "dawn", "$", "south", "sauce", "twown", "on", "donna", "down", "doll", "gone"]);
 homonyms.set(Command.Up, ['oak', 'hope', "north", "notes", "nose"]);
 function matchCommands(cmd, msg) {
     for (const text of homonyms.get(cmd)) {
@@ -33,21 +37,15 @@ function process(msg) {
     return txt.trim().split(' ').filter(x => homonyms.has(x)).map(x => x);
 }
 function voiceRecognitionStart(callback) {
+    //create speech recognition object
     const recognition = new speechRecognition();
+    // setup
     recognition.continuous = false;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 3;
     recognition.interimResults = true;
-    // let processed = 0
-    // recognition.onaudiostart = (evt) => console.log('onaudiostart', evt)
-    // recognition.onaudioend = (evt) => console.log('onaudioend', evt)
-    // recognition.onerror = (evt) => console.log('onerror', evt)
-    recognition.onend = () => {
-        // console.log('onend', evt)
-        recognition.start();
-    };
+    recognition.onend = () => recognition.start();
     recognition.onresult = function (evt) {
-        // if (evt.resultIndex <= processed) return
         var interim_transcript = '';
         var final_transcript = '';
         var requiredConfidence = 0.75;
@@ -62,17 +60,21 @@ function voiceRecognitionStart(callback) {
             }
         }
         console.log(evt, `${interim_transcript} || ${final_transcript} => ${process(final_transcript)}`);
-        let resInter = process(interim_transcript);
-        if (resInter && resInter.length > 0) {
-            recognition.abort();
-            // processed = evt.resultIndex
-            return callback(resInter);
+        // try to process final result
+        if (final_transcript) {
+            let resFinal = process(final_transcript);
+            if (resFinal && resFinal.length > 0) {
+                recognition.abort();
+                return callback(resFinal);
+            }
         }
-        let resFinal = process(final_transcript);
-        if (resFinal && resFinal.length > 0) {
-            recognition.abort();
-            // processed = evt.resultIndex
-            return callback(resFinal);
+        // try to process inter result
+        if (interim_transcript) {
+            let resInter = process(interim_transcript);
+            if (resInter && resInter.length > 0) {
+                recognition.abort();
+                return callback(resInter);
+            }
         }
     };
     recognition.start();
@@ -312,6 +314,61 @@ class Block {
     }
 }
 
+class Coin {
+    constructor(leveldata) {
+        this.id = "coin-*";
+        this.visible = true;
+        this.position = { x: 0, y: 0 };
+        this.size = { x: canvasWidth / 16, y: canvasHeight / 9 };
+        this.leveldata = leveldata;
+    }
+    get posX() { return this.position.x / this.size.x; }
+    set posX(val) { this.position.x = val * this.size.x; }
+    get posY() { return this.position.y / this.size.y; }
+    set posY(val) { this.position.y = val * this.size.y; }
+    update() {
+    }
+    render(ctx) {
+        if (!this.visible)
+            return;
+        ctx.beginPath();
+        ctx.fillStyle = "#27496d";
+        ctx.fillRect(this.position.x + this.size.x * 0.25, this.position.y + this.size.y * 0.25, this.size.x / 2, this.size.y / 2);
+        ctx.stroke();
+    }
+    collect() {
+        this.visible = false;
+        this.leveldata.refresh(this.id);
+    }
+}
+
+class Goal {
+    constructor(leveldata) {
+        this.id = "goal-*";
+        this.visible = true;
+        this.position = { x: 0, y: 0 };
+        this.size = { x: canvasWidth / 16, y: canvasHeight / 9 };
+        this.leveldata = leveldata;
+    }
+    get posX() { return this.position.x / this.size.x; }
+    set posX(val) { this.position.x = val * this.size.x; }
+    get posY() { return this.position.y / this.size.y; }
+    set posY(val) { this.position.y = val * this.size.y; }
+    update() {
+    }
+    render(ctx) {
+        if (!this.visible)
+            return;
+        ctx.beginPath();
+        ctx.fillStyle = "#ffcd3c";
+        ctx.fillRect(this.position.x + this.size.x * 0.25, this.position.y + this.size.y * 0.25, this.size.x / 2, this.size.y / 2);
+        ctx.stroke();
+    }
+    collect() {
+        this.leveldata.complete();
+    }
+}
+
 class Character {
     constructor(leveldata) {
         this.id = "character";
@@ -413,61 +470,6 @@ class Text {
         ctx.fillText(this.text, 0, 0);
         ctx.scale(1 / this.scale, 1 / this.scale);
         ctx.translate(-this.position.x, -this.position.y);
-    }
-}
-
-class Coin {
-    constructor(leveldata) {
-        this.id = "coin-*";
-        this.visible = true;
-        this.position = { x: 0, y: 0 };
-        this.size = { x: canvasWidth / 16, y: canvasHeight / 9 };
-        this.leveldata = leveldata;
-    }
-    get posX() { return this.position.x / this.size.x; }
-    set posX(val) { this.position.x = val * this.size.x; }
-    get posY() { return this.position.y / this.size.y; }
-    set posY(val) { this.position.y = val * this.size.y; }
-    update() {
-    }
-    render(ctx) {
-        if (!this.visible)
-            return;
-        ctx.beginPath();
-        ctx.fillStyle = "#27496d";
-        ctx.fillRect(this.position.x + this.size.x * 0.25, this.position.y + this.size.y * 0.25, this.size.x / 2, this.size.y / 2);
-        ctx.stroke();
-    }
-    collect() {
-        this.visible = false;
-        this.leveldata.refresh(this.id);
-    }
-}
-
-class Goal {
-    constructor(leveldata) {
-        this.id = "goal-*";
-        this.visible = true;
-        this.position = { x: 0, y: 0 };
-        this.size = { x: canvasWidth / 16, y: canvasHeight / 9 };
-        this.leveldata = leveldata;
-    }
-    get posX() { return this.position.x / this.size.x; }
-    set posX(val) { this.position.x = val * this.size.x; }
-    get posY() { return this.position.y / this.size.y; }
-    set posY(val) { this.position.y = val * this.size.y; }
-    update() {
-    }
-    render(ctx) {
-        if (!this.visible)
-            return;
-        ctx.beginPath();
-        ctx.fillStyle = "#ffcd3c";
-        ctx.fillRect(this.position.x + this.size.x * 0.25, this.position.y + this.size.y * 0.25, this.size.x / 2, this.size.y / 2);
-        ctx.stroke();
-    }
-    collect() {
-        this.leveldata.complete();
     }
 }
 
